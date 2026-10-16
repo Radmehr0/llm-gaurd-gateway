@@ -7,6 +7,7 @@ measure and improve (e.g. by adding an ML classifier later).
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 
 
@@ -71,8 +72,17 @@ def _run(category: str, rules: dict[str, re.Pattern], text: str) -> list[Finding
     return findings
 
 
+# Zero-width and soft-hyphen characters attackers insert to split keywords.
+_INVISIBLE = re.compile(r"[­​-‏⁠-⁤﻿]")
+
+
+def normalize(text: str) -> str:
+    """Fold look-alike characters (NFKC) and drop invisible ones."""
+    return _INVISIBLE.sub("", unicodedata.normalize("NFKC", text))
+
+
 def detect_injection(text: str) -> list[Finding]:
-    return _run("injection", INJECTION_RULES, text)
+    return _run("injection", INJECTION_RULES, normalize(text))
 
 
 def detect_pii(text: str) -> list[Finding]:
